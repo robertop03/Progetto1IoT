@@ -10,6 +10,7 @@
 #define BUT3_PIN A3
 #define BUT4_PIN A4
 #define POT_PIN A5
+
 int score;
 
 
