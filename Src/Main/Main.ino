@@ -15,6 +15,11 @@
 
 int score;
 
+bool led1;
+bool led2;
+bool led3;
+bool led4;
+
 
 // Create an LCD object. Parameters: (RS, E, D4, D5, D6, D7):
 LiquidCrystal lcd = LiquidCrystal(2, 3, 4, 5, 6, 7);
@@ -41,11 +46,23 @@ void setup() {
   lcd.begin(16, 2);
   score = 0;
   initGame();
+
+  led1 = false;
+  led2 = false;
+  led3 = false;
+  led4 = false;
 }
 
 void loop() {
   // How to use generateRandomicNumber
   // int numero = generateRandomicNumber();
+
+  digitalWrite(LED1_PIN,led1);
+  digitalWrite(LED2_PIN,led2);
+  digitalWrite(LED3_PIN,led3);
+  digitalWrite(LED4_PIN,led4);
+
+
   
 }
 
@@ -76,4 +93,8 @@ void initGame() {
   }
 
 
+}
+
+void ledHandler(){
+  
 }
