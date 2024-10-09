@@ -51,24 +51,29 @@ void loop() {
 
 void initGame() {
   
-  int fadeAmount = 10;
+  int fadeAmount = 5;
   int currIntensity = 0;
-  int buttonState = digitalRead(BUT1_PIN);
+  int buttonState;
   lcd.setCursor(0, 0);
   lcd.write("Welcome to GMB!");
   lcd.setCursor(0, 1);
   lcd.write("Press B1 to Strt");
-  bool endInit = true;
-  while(endInit){
+
+  while(1){
+    buttonState = digitalRead(BUT1_PIN);
     analogWrite(LEDS_PIN, currIntensity);   
     currIntensity = currIntensity + fadeAmount;
     if (currIntensity == 0 || currIntensity == 255) {
       fadeAmount = -fadeAmount ; 
     }     
 
-    if (buttonState == HIGH)  {
-      endInit = false;
+    if (buttonState == LOW)  {
+      break;
     }
+
     delay(20); 
+
   }
+
+
 }
