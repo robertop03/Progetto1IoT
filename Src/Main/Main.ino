@@ -24,7 +24,9 @@ int generateRandomicNumber() {
   return random(0, 16);  // random(min, max) generate and return a number between min and max-1
 }
 
-void wakeUpNow(){}
+void wakeUpNow(){
+  
+}
 
 void sleepNow(){
   set_sleep_mode(SLEEP_MODE_PWR_DOWN); 
