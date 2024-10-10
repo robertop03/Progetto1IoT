@@ -47,6 +47,12 @@ void setup() {
   score = 0;
   initGame();
 
+  pinMode(BUT1_PIN, INPUT);
+  pinMode(BUT2_PIN, INPUT);
+  pinMode(BUT3_PIN, INPUT);
+  pinMode(BUT4_PIN, INPUT);
+
+
   led1 = false;
   led2 = false;
   led3 = false;
@@ -57,13 +63,9 @@ void loop() {
   // How to use generateRandomicNumber
   // int numero = generateRandomicNumber();
 
-  digitalWrite(LED1_PIN,led1);
-  digitalWrite(LED2_PIN,led2);
-  digitalWrite(LED3_PIN,led3);
-  digitalWrite(LED4_PIN,led4);
+  ledHandler();
 
-
-  
+  delay(20); 
 }
 
 void initGame() {
@@ -96,5 +98,41 @@ void initGame() {
 }
 
 void ledHandler(){
+
+
+  if(digitalRead(BUT1_PIN)==LOW){
+    led1 = !led1;
+    Serial.write("bt1 click");
+    while(digitalRead(BUT1_PIN)==LOW){};
+  }
+
+  if(digitalRead(BUT2_PIN)==LOW){
+    led2 = !led2;
+    Serial.write("bt2 click");
+    while(digitalRead(BUT2_PIN)==LOW){};
+  }
+
+  if(digitalRead(BUT3_PIN)==LOW){
+    led3 = !led3;
+    Serial.write("bt3 click");
+    while(digitalRead(BUT3_PIN)==LOW){};
+  }
+
+  if(digitalRead(BUT4_PIN)==LOW){
+    led4 = !led4;
+    Serial.write("bt4 click");
+    while(digitalRead(BUT4_PIN)==LOW){};
+  }
+
+  delay(20);
+
+  ledUpdater();
   
+}
+
+void ledUpdater(){
+  digitalWrite(LED1_PIN,led1);
+  digitalWrite(LED2_PIN,led2);
+  digitalWrite(LED3_PIN,led3);
+  digitalWrite(LED4_PIN,led4);
 }
