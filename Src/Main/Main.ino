@@ -20,6 +20,7 @@ unsigned long startMillis;
 unsigned long currentMillis;
 int timelimit;
 int difficulty;
+int ledState[4];
 const int ledPins[] = {LED1_PIN, LED2_PIN, LED3_PIN, LED4_PIN};    // L1, L2, L3, L4 (binary LEDs)
 const int buttonPins[] = {BUT1_PIN, BUT2_PIN, BUT3_PIN, BUT4_PIN}; // B1, B2, B3, B4 (buttons for binary LEDs)
 
@@ -75,7 +76,7 @@ bool checkBinary()
 {
   for (int i = 0; i < 4; i++)
   {
-    if (ledState[i] != ((randomNum >> i) & 1))
+    if (ledState[i] != ((numero >> i) & 1))
     {
       return false;
     }
@@ -130,21 +131,21 @@ void game()
       lcd.setCursor(0, 0);
       lcd.write("Go!");
       difficulty = map(potRead, 0, 1023, 1, 4); // Map potentiometer value to difficulty
-      timeLimit = 5000 / difficulty;            // Adjust time based on difficulty
+      timelimit = 5000 / difficulty;            // Adjust time based on difficulty
       delay(2000);
     }
   }
   else
   {
-    randomNum = generateRandomNumber();
+    numero = generateRandomicNumber();
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.write("Number:%d " randomNum);
+    lcd.write("Number:%d ", numero);
 
     long startTime = millis();
     bool correct = false;
 
-    while (millis() - startTime < timeLimit)
+    while (millis() - startTime < timelimit)
     {
       for (int i = 0; i < 4; i++)
       {
@@ -166,21 +167,21 @@ void game()
     if (correct)
     {
       score++;
-      displayMessage("GOOD! Score: " + String(score));
+      lcd.write("GOOD! Score:%d ", score);
       delay(2000);
     }
     else
     {
-      digitalWrite(redLedPin, HIGH);
+      digitalWrite(LEDS_PIN, HIGH);
       delay(1000);
-      digitalWrite(redLedPin, LOW);
-      displayMessage("Game Over - Final Score: " + String(score));
+      digitalWrite(LEDS_PIN, LOW);
+
+      lcd.write("Game Over - Final Score:%d ", score);
       delay(5000);
-      showWelcome();
       gameActive = false;
     }
 
     // Reduce time for the next round
-    timeLimit = timeLimit - timeLimit * 0.1;
+    timelimit = timelimit - timelimit * 0.1;
   }
 }
