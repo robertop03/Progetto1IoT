@@ -107,13 +107,13 @@ void initGame()
     {
       endInit = false;
       lcd.clear();
-      game();
+      loop();
     }
     delay(20);
   }
 }
 
-void game()
+void loop()
 {
   int but1 = digitalRead(BUT1_PIN);
   int but2 = digitalRead(BUT2_PIN);
