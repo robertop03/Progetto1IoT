@@ -13,6 +13,16 @@
 #define BUT4_PIN A4
 #define POT_PIN A5
 
+const int debounceDelay = 50; // Ritardo per debounce in millisecondi
+unsigned long lastDebounceTime1 = 0; //ultimo click del bottone 1
+unsigned long lastDebounceTime2 = 0; //ultimo click del bottone 2
+unsigned long lastDebounceTime3 = 0; //ultimo click del bottone 3
+unsigned long lastDebounceTime4 = 0; //ultimo click del bottone 4
+bool lastButtonState1 = HIGH;  // Stato precedente del bottone 1
+bool lastButtonState2 = HIGH;  // Stato precedente del bottone 2
+bool lastButtonState3 = HIGH;  // Stato precedente del bottone 3
+bool lastButtonState4 = HIGH;  // Stato precedente del bottone 4
+
 int fadeAmount;
 int currIntensity;
 int buttonState;
@@ -23,7 +33,7 @@ unsigned long startMillis;
 unsigned long currentMillis;
 int timelimit;
 int difficulty;
-int ledState[4];
+int ledState[] = {0,0,0,0};
 int gameInitialized = 0;
 bool gameActive = false;
 const int ledPins[] = {LED1_PIN, LED2_PIN, LED3_PIN, LED4_PIN};    // L1, L2, L3, L4 (binary LEDs)
@@ -45,6 +55,10 @@ void resetLeds()
     digitalWrite(ledPins[i], LOW);
     ledState[i] = LOW;
   }
+  bool lastButtonState1 = HIGH;  
+  bool lastButtonState2 = HIGH;  
+  bool lastButtonState3 = HIGH; 
+  bool lastButtonState4 = HIGH; 
 }
 
 void wakeUpNow() {}
@@ -98,7 +112,7 @@ bool checkBinary()
 
 void initGame()
 {
-    buttonState = digitalRead(BUT1_PIN);
+    unsigned long currentTime = millis();
     analogWrite(LEDS_PIN, currIntensity);
     currIntensity = currIntensity + fadeAmount;
     if (currIntensity == 0 || currIntensity == 255)
@@ -106,12 +120,19 @@ void initGame()
       fadeAmount = -fadeAmount;
     }
 
-    if (buttonState == LOW)
-    {
+
+      // Bottone 1
+    bool currentButtonState1 = digitalRead(BUT1_PIN);
+    if (currentButtonState1 != lastButtonState1 && currentButtonState1 == HIGH && (currentTime - lastDebounceTime1 > debounceDelay)) {
       lcd.clear();
       gameInitialized = 1;
       analogWrite(LEDS_PIN, 0);
+      resetLeds();
+      Serial.write("bt1 click");
+      lastDebounceTime1 = currentTime;
     }
+    lastButtonState1 = currentButtonState1;
+    
     delay(20);
   
 }
@@ -124,22 +145,19 @@ void loop()
     initGame();
     break;
   case 1:
-    gameLoop();
+    //gameLoop();
+    ledHandler();
     break;
   }
 }
 
 void gameLoop()
 {
-  int but1 = digitalRead(BUT1_PIN);
-  int but2 = digitalRead(BUT2_PIN);
-  int but3 = digitalRead(BUT3_PIN);
-  int but4 = digitalRead(BUT4_PIN);
   int potRead = analogRead(POT_PIN);
 
   if (!gameActive)
   {
-    if (digitalRead(but1) == LOW)
+    if (digitalRead(BUT1_PIN) == LOW)
     {
       gameActive = true;
       resetLeds();
@@ -199,4 +217,58 @@ void gameLoop()
     // Reduce time for the next round
     timelimit = timelimit - timelimit * 0.1;
   }
+}
+
+void ledHandler() {
+  unsigned long currentTime = millis();
+
+  // Bottone 1
+  bool currentButtonState1 = digitalRead(BUT1_PIN);
+  if (currentButtonState1 != lastButtonState1 && currentButtonState1 == HIGH && (currentTime - lastDebounceTime1 > debounceDelay)) {
+    ledState[0] = reverseValue(ledState[0]);
+    Serial.write("bt1 click");
+    lastDebounceTime1 = currentTime;
+  }
+  lastButtonState1 = currentButtonState1;
+
+  // Bottone 2
+  bool currentButtonState2 = digitalRead(BUT2_PIN);
+  if (currentButtonState2 != lastButtonState2 && currentButtonState2 == HIGH && (currentTime - lastDebounceTime2 > debounceDelay)) {
+    ledState[1] = reverseValue(ledState[1]);
+    Serial.write("bt2 click");
+    lastDebounceTime2 = currentTime;
+  }
+  lastButtonState2 = currentButtonState2;
+
+  // Bottone 3
+  bool currentButtonState3 = digitalRead(BUT3_PIN);
+  if (currentButtonState3 != lastButtonState3 && currentButtonState3 == HIGH && (currentTime - lastDebounceTime3 > debounceDelay)) {
+    ledState[2] = reverseValue(ledState[2]);
+    Serial.write("bt3 click");
+    lastDebounceTime3 = currentTime;
+  }
+  lastButtonState3 = currentButtonState3;
+
+  // Bottone 4
+  bool currentButtonState4 = digitalRead(BUT4_PIN);
+  if (currentButtonState4 != lastButtonState4 && currentButtonState4 == HIGH && (currentTime - lastDebounceTime4 > debounceDelay)) {
+    ledState[3] = reverseValue(ledState[3]);
+    Serial.write("bt4 click");
+    lastDebounceTime4 = currentTime;
+  }
+  lastButtonState4 = currentButtonState4;
+
+  delay(20);
+  Serial.println("button state: " + (String)ledState[0] + " " + (String)ledState[1] + " " + (String)ledState[2] + " " + (String)ledState[3]);
+  ledUpdater();
+}
+
+void ledUpdater() {
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(ledPins[i], ledState[i]);
+  }
+}
+
+int reverseValue(int i) {
+  return i == 0 ? 1 : 0;
 }
