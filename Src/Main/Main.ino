@@ -13,6 +13,9 @@
 #define BUT4_PIN A4
 #define POT_PIN A5
 
+int fadeAmount;
+int currIntensity;
+int buttonState;
 int score;
 int numero;
 char binarioString[5];
@@ -70,6 +73,14 @@ void setup()
   pinMode(LEDS_PIN, OUTPUT);
   pinMode(POT_PIN, INPUT);
   score = 0;
+
+  fadeAmount = 10;
+  currIntensity = 0;
+  
+  lcd.setCursor(0, 0);
+  lcd.write("Welcome to GMB!");
+  lcd.setCursor(0, 1);
+  lcd.write("Press B1 to Strt");
 }
 
 // Function to check if binary is correct
@@ -87,16 +98,7 @@ bool checkBinary()
 
 void initGame()
 {
-  int fadeAmount = 10;
-  int currIntensity = 0;
-  int buttonState = digitalRead(BUT1_PIN);
-  lcd.setCursor(0, 0);
-  lcd.write("Welcome to GMB!");
-  lcd.setCursor(0, 1);
-  lcd.write("Press B1 to Strt");
-  bool endInit = true;
-  while (endInit)
-  {
+    buttonState = digitalRead(BUT1_PIN);
     analogWrite(LEDS_PIN, currIntensity);
     currIntensity = currIntensity + fadeAmount;
     if (currIntensity == 0 || currIntensity == 255)
@@ -104,14 +106,14 @@ void initGame()
       fadeAmount = -fadeAmount;
     }
 
-    if (buttonState == HIGH)
+    if (buttonState == LOW)
     {
-      endInit = false;
       lcd.clear();
       gameInitialized = 1;
+      analogWrite(LEDS_PIN, 0);
     }
     delay(20);
-  }
+  
 }
 
 void loop()
