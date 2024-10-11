@@ -21,6 +21,8 @@ unsigned long currentMillis;
 int timelimit;
 int difficulty;
 int ledState[4];
+int gameInitialized = 0;
+bool gameActive = false;
 const int ledPins[] = {LED1_PIN, LED2_PIN, LED3_PIN, LED4_PIN};    // L1, L2, L3, L4 (binary LEDs)
 const int buttonPins[] = {BUT1_PIN, BUT2_PIN, BUT3_PIN, BUT4_PIN}; // B1, B2, B3, B4 (buttons for binary LEDs)
 
@@ -68,7 +70,6 @@ void setup()
   pinMode(LEDS_PIN, OUTPUT);
   pinMode(POT_PIN, INPUT);
   score = 0;
-  initGame();
 }
 
 // Function to check if binary is correct
@@ -107,7 +108,7 @@ void initGame()
     {
       endInit = false;
       lcd.clear();
-      loop();
+      gameInitialized = 1;
     }
     delay(20);
   }
@@ -115,12 +116,24 @@ void initGame()
 
 void loop()
 {
+  switch (gameInitialized)
+  {
+  case 0:
+    initGame();
+    break;
+  case 1:
+    gameLoop();
+    break;
+  }
+}
+
+void gameLoop()
+{
   int but1 = digitalRead(BUT1_PIN);
   int but2 = digitalRead(BUT2_PIN);
   int but3 = digitalRead(BUT3_PIN);
   int but4 = digitalRead(BUT4_PIN);
   int potRead = analogRead(POT_PIN);
-  bool gameActive = false;
 
   if (!gameActive)
   {
