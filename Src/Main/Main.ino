@@ -32,7 +32,9 @@ char binarioString[5];
 unsigned long startMillis;
 unsigned long currentMillis;
 int timelimit;
-int difficulty;
+int difficulty = 1;
+float factorF = 1.0; // fattore impostato con il potenziometro
+float factorL = 0.9; // fattore che scala il tempo ogni livello completato
 int ledState[] = {0,0,0,0};
 int gameInitialized = 0;
 bool gameActive = false;
@@ -55,21 +57,43 @@ void resetLeds()
     digitalWrite(ledPins[i], LOW);
     ledState[i] = LOW;
   }
-  bool lastButtonState1 = HIGH;  
-  bool lastButtonState2 = HIGH;  
-  bool lastButtonState3 = HIGH; 
-  bool lastButtonState4 = HIGH; 
+  lastButtonState1 = HIGH;  
+  lastButtonState2 = HIGH;  
+  lastButtonState3 = HIGH; 
+  lastButtonState4 = HIGH; 
 }
+
+void readDifficultyLevel() {
+    int potValue = analogRead(POT_PIN);      // Leggi il valore del potenziometro (0-1023)
+    difficulty = map(potValue, 0, 1023, 1, 4); // Mappa il valore su un range 1-4
+    factorF = 1.0 + (difficulty - 1) * 0.5;   // F è 1.0 per livello 1, 2.5 per livello 4
+
+    // Mostra il livello di difficoltà sul display LCD
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Difficulty: L");
+    lcd.print(difficulty);
+    delay(1000);  // Piccola attesa per visualizzare il livello
+}
+
 
 void wakeUpNow() {}
 
 void sleepNow()
 {
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-  attachInterrupt(0, wakeUpNow, LOW); // use interrupt 0 (pin 2) and run function wakeUpNow when pin 2 gets LOW
-  sleep_mode();
-  sleep_disable();
-  detachInterrupt(0);
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);   // Imposta la modalità di sleep
+  sleep_enable();                        // Abilita la modalità di sleep
+  
+  // Imposta interrupt per svegliare Arduino quando un qualsiasi pulsante viene premuto
+  attachInterrupt(digitalPinToInterrupt(2), wakeUpNow, LOW); 
+  attachInterrupt(digitalPinToInterrupt(3), wakeUpNow, LOW);
+  
+  sleep_mode();  // Arduino va in modalità sleep
+
+  // Quando Arduino si risveglia:
+  sleep_disable();  // Disabilita la modalità di sleep
+  detachInterrupt(digitalPinToInterrupt(2));  // Rimuove gli interrupt
+  detachInterrupt(digitalPinToInterrupt(3));
 }
 
 void setup()
@@ -98,17 +122,32 @@ void setup()
 }
 
 // Function to check if binary is correct
-bool checkBinary()
-{
-  for (int i = 0; i < 4; i++)
-  {
-    if (ledState[i] != ((numero >> i) & 1))
-    {
-      return false;
+bool checkBinary() {
+  Serial.print("Numero generato (binario): ");
+  Serial.println(numero, BIN); // Visualizza il numero generato in binario
+
+  Serial.print("Stato dei LED: ");
+  for (int i = 0; i < 4; i++) {
+    Serial.print(ledState[i]); // Mostra lo stato dei LED
+  }
+  Serial.println();
+
+  bool isCorrect = true; // Assumiamo che sia corretto
+
+  // Confronto bit per bit (inverti ordine se necessario)
+  for (int i = 0; i < 4; i++) {
+    int bitExpected = (numero >> (3 - i)) & 1;  // Cambiato l'ordine dei bit
+    int ledBit = ledState[i];  // Stato corrente del LED
+    // Se c'è un errore nel confronto, settiamo isCorrect a false
+    if (ledBit != bitExpected) {
+      isCorrect = false;
     }
   }
-  return true;
+
+  return isCorrect; // Restituisce true solo se tutti i bit corrispondono
 }
+
+
 
 void initGame()
 {
@@ -117,24 +156,24 @@ void initGame()
     currIntensity = currIntensity + fadeAmount;
     if (currIntensity == 0 || currIntensity == 255)
     {
-      fadeAmount = -fadeAmount;
+        fadeAmount = -fadeAmount;
     }
 
-
-      // Bottone 1
     bool currentButtonState1 = digitalRead(BUT1_PIN);
     if (currentButtonState1 != lastButtonState1 && currentButtonState1 == HIGH && (currentTime - lastDebounceTime1 > debounceDelay)) {
-      lcd.clear();
-      gameInitialized = 1;
-      analogWrite(LEDS_PIN, 0);
-      resetLeds();
-      Serial.write("bt1 click");
-      lastDebounceTime1 = currentTime;
+        lcd.clear();
+        readDifficultyLevel();
+        gameInitialized = 1; // Imposta il gioco come inizializzato
+        lcd.setCursor(0, 0);
+        lcd.print("Go!"); // Mostra "Go!" sul display
+        delay(500); // Attesa per visualizzare "Go!"
+        gameActive = true; // Attiva il gioco
+        resetLeds(); // Resetta i LED
+        lastDebounceTime1 = currentTime;
     }
     lastButtonState1 = currentButtonState1;
-    
+
     delay(20);
-  
 }
 
 void loop()
@@ -145,8 +184,7 @@ void loop()
     initGame();
     break;
   case 1:
-    //gameLoop();
-    ledHandler();
+    gameLoop();
     break;
   }
 }
@@ -155,68 +193,76 @@ void gameLoop()
 {
   int potRead = analogRead(POT_PIN);
 
-  if (!gameActive)
-  {
-    if (digitalRead(BUT1_PIN) == LOW)
+    if (!gameActive)
     {
-      gameActive = true;
-      resetLeds();
-      lcd.setCursor(0, 0);
-      lcd.write("Go!");
-      difficulty = map(potRead, 0, 1023, 1, 4); // Map potentiometer value to difficulty
-      timelimit = 5000 / difficulty;            // Adjust time based on difficulty
-      delay(2000);
+        // Questo caso non dovrebbe mai accadere poiché il gioco è già attivo
+        return;
     }
-  }
-  else
-  {
+
+    // Solo se il gioco è attivo, generiamo un numero casuale
     numero = generateRandomicNumber();
+    digitalWrite(LEDS_PIN, LOW);
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.write("Number:%d ", numero);
+    lcd.print("Number: ");
+    lcd.print(numero);
+    delay(500);
 
     long startTime = millis();
     bool correct = false;
 
+    // Ciclo di attesa fino al termine del tempo
+    timelimit = (int)(10000 / factorF);
     while (millis() - startTime < timelimit)
     {
-      for (int i = 0; i < 4; i++)
-      {
-        if (digitalRead(buttonPins[i]) == LOW)
-        {
-          ledState[i] = !ledState[i];
-          digitalWrite(ledPins[i], ledState[i]);
-          delay(200); // Debounce delay
-        }
-      }
+        ledHandler(); // Gestisce gli input dei pulsanti e gli LED
+    }
 
-      if (checkBinary())
-      {
+    // Controllo se il numero binario è corretto dopo che il tempo è scaduto
+    if (checkBinary()) // Controlla se l'input in binario è corretto
+    {
         correct = true;
-        break;
-      }
+    }
+    if (correct) {
+      Serial.println("Boolean: True"); // Se true, stampa "True"
+    } else {
+      Serial.println("Boolean: False"); // Se false, stampa "False"
     }
 
     if (correct)
     {
-      score++;
-      lcd.write("GOOD! Score:%d ", score);
-      delay(2000);
+        score++; // Aumenta il punteggio se la risposta è corretta
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("GOOD! Score: ");
+        lcd.print(score);
+        delay(2000);
+        timelimit = (int)(timelimit * factorL);
     }
     else
     {
-      digitalWrite(LEDS_PIN, HIGH);
-      delay(1000);
-      digitalWrite(LEDS_PIN, LOW);
+        digitalWrite(LEDS_PIN, HIGH); // Accende il LED rosso
+        delay(1000); // Tieni acceso per 1 secondo
+        digitalWrite(LEDS_PIN, LOW); // Spegni il LED rosso
 
-      lcd.write("Game Over - Final Score:%d ", score);
-      delay(5000);
-      gameActive = false;
-    }
-
-    // Reduce time for the next round
-    timelimit = timelimit - timelimit * 0.1;
-  }
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Game Over -");
+        lcd.setCursor(0, 1);
+        lcd.print("Final Score: ");
+        lcd.print(score); // Mostra il punteggio finale
+        delay(10000);
+        // Reset game variables
+        score = 0; // Resetta il punteggio
+        gameActive = false; // Resetta il gioco
+        gameInitialized = 0; // Riporta il gioco allo stato iniziale
+        resetLeds(); // Resetta i LED
+        lcd.clear(); // Pulisce lo schermo
+        lcd.setCursor(0, 0);
+        lcd.print("Welcome to GMB!"); // Mostra di nuovo il messaggio di benvenuto
+        lcd.setCursor(0, 1);
+        lcd.print("Press B1 to Strt"); // Istruzioni per l'inizio
+    }    
 }
 
 void ledHandler() {
