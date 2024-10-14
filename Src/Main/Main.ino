@@ -29,7 +29,6 @@ int buttonState;
 int score;
 int numero;
 char binarioString[5];
-unsigned long lastInputTime; // Memorizza l'ultimo tempo di input
 unsigned long startMillis;
 unsigned long currentMillis;
 int timelimit;
@@ -87,17 +86,19 @@ void sleepNow()
   sleep_enable();                      // Abilita la modalità di sleep
 
   // Imposta interrupt per svegliare Arduino quando un qualsiasi pulsante viene premuto
-  attachInterrupt(digitalPinToInterrupt(2), wakeUpNow, LOW);
-  attachInterrupt(digitalPinToInterrupt(3), wakeUpNow, LOW);
-  attachInterrupt(digitalPinToInterrupt(9), wakeUpNow, LOW);
+  attachInterrupt(digitalPinToInterrupt(8), wakeUpNow, LOW);
+  attachInterrupt(digitalPinToInterrupt(10), wakeUpNow, LOW);
+  attachInterrupt(digitalPinToInterrupt(11), wakeUpNow, LOW);
+  attachInterrupt(digitalPinToInterrupt(12), wakeUpNow, LOW);
 
   sleep_mode(); // Arduino va in modalità sleep
 
   // Quando Arduino si risveglia:
   sleep_disable();                           // Disabilita la modalità di sleep
-  detachInterrupt(digitalPinToInterrupt(2)); // Rimuove gli interrupt
-  detachInterrupt(digitalPinToInterrupt(3));
-  detachInterrupt(digitalPinToInterrupt(9));
+  detachInterrupt(digitalPinToInterrupt(8)); // Rimuove gli interrupt
+  detachInterrupt(digitalPinToInterrupt(10));
+  detachInterrupt(digitalPinToInterrupt(11));
+  detachInterrupt(digitalPinToInterrupt(12));
 }
 
 void setup()
@@ -123,6 +124,7 @@ void setup()
   lcd.write("Welcome to GMB!");
   lcd.setCursor(0, 1);
   lcd.write("Press B1 to Strt");
+  startMillis = millis();
 }
 
 // Function to check if binary is correct
@@ -166,10 +168,14 @@ void initGame()
   }
 
   bool currentButtonState1 = digitalRead(BUT1_PIN);
-  if ((currentTime - millis() >= timeout) && currentButtonState1 == lastButtonState1 && currentButtonState1 == LOW)
+
+  // Controllo se è trascorso il timeout e nessun pulsante è stato premuto
+  if (currentTime - startMillis >= timeout && currentButtonState1 == lastButtonState1)
   {
-    sleepNow();
+    sleepNow(); // Manda Arduino in modalità sleep
   }
+
+  // Se il bottone 1 viene premuto, inizializza il gioco
   if (currentButtonState1 != lastButtonState1 && currentButtonState1 == HIGH && (currentTime - lastDebounceTime1 > debounceDelay))
   {
     lcd.clear();
@@ -253,7 +259,6 @@ void gameLoop()
     lcd.print(score);
     delay(2000);
     timelimit = (int)(timelimit * factorL);
-    resetLeds(); // Resetta i LED
   }
   else
   {
