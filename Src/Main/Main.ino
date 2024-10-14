@@ -2,15 +2,15 @@
 #include <avr/sleep.h>
 #include <stdlib.h>
 
-#define LED1_PIN 10
-#define LED2_PIN 11
-#define LED3_PIN 12
-#define LED4_PIN 13
+#define LED1_PIN A1
+#define LED2_PIN A2
+#define LED3_PIN A3
+#define LED4_PIN A4
 #define LEDS_PIN 9
 #define BUT1_PIN 8
-#define BUT2_PIN A2
-#define BUT3_PIN A3
-#define BUT4_PIN A4
+#define BUT2_PIN 10
+#define BUT3_PIN 11
+#define BUT4_PIN 12
 #define POT_PIN A5
 
 const int debounceDelay = 50;        // Ritardo per debounce in millisecondi
