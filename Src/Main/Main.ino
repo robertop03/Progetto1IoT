@@ -82,23 +82,26 @@ void wakeUpNow() {}
 
 void sleepNow()
 {
+  bool currentButtonState1 = digitalRead(BUT1_PIN);
+  bool currentButtonState2 = digitalRead(BUT2_PIN);
+  bool currentButtonState3 = digitalRead(BUT3_PIN);
+  bool currentButtonState4 = digitalRead(BUT4_PIN);
+
+  Serial.println("Sleeping now");
+  Serial.flush();
+  delay(20);
+
   set_sleep_mode(SLEEP_MODE_PWR_DOWN); // Imposta la modalità di sleep
   sleep_enable();                      // Abilita la modalità di sleep
-
-  // Imposta interrupt per svegliare Arduino quando un qualsiasi pulsante viene premuto
-  attachInterrupt(digitalPinToInterrupt(8), wakeUpNow, LOW);
-  attachInterrupt(digitalPinToInterrupt(10), wakeUpNow, LOW);
-  attachInterrupt(digitalPinToInterrupt(11), wakeUpNow, LOW);
-  attachInterrupt(digitalPinToInterrupt(12), wakeUpNow, LOW);
-
-  sleep_mode(); // Arduino va in modalità sleep
+  sleep_mode();                        // Arduino va in modalità sleep
 
   // Quando Arduino si risveglia:
-  sleep_disable();                           // Disabilita la modalità di sleep
-  detachInterrupt(digitalPinToInterrupt(8)); // Rimuove gli interrupt
-  detachInterrupt(digitalPinToInterrupt(10));
-  detachInterrupt(digitalPinToInterrupt(11));
-  detachInterrupt(digitalPinToInterrupt(12));
+  if (currentButtonState1 == LOW || currentButtonState2 == LOW || currentButtonState3 == LOW || currentButtonState4 == LOW)
+  {
+    sleep_disable(); // Disabilita la modalità di sleep
+    Serial.println("WAKE UP");
+    return;
+  }
 }
 
 void setup()
@@ -119,6 +122,12 @@ void setup()
 
   fadeAmount = 10;
   currIntensity = 0;
+
+  // Imposta interrupt per svegliare Arduino quando un qualsiasi pulsante viene premuto
+  attachInterrupt(digitalPinToInterrupt(8), wakeUpNow, RISING);
+  attachInterrupt(digitalPinToInterrupt(10), wakeUpNow, RISING);
+  attachInterrupt(digitalPinToInterrupt(11), wakeUpNow, RISING);
+  attachInterrupt(digitalPinToInterrupt(12), wakeUpNow, RISING);
 
   lcd.setCursor(0, 0);
   lcd.write("Welcome to GMB!");
@@ -172,6 +181,7 @@ void initGame()
   // Controllo se è trascorso il timeout e nessun pulsante è stato premuto
   if (currentTime - startMillis >= timeout && currentButtonState1 == lastButtonState1)
   {
+    lcd.clear();
     sleepNow(); // Manda Arduino in modalità sleep
   }
 
