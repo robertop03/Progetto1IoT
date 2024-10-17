@@ -14,14 +14,8 @@
 #define POT_PIN A5
 
 const int debounceDelay = 50;        // Ritardo per debounce in millisecondi
-unsigned long lastDebounceTime1 = 0; // ultimo click del bottone 1
-unsigned long lastDebounceTime2 = 0; // ultimo click del bottone 2
-unsigned long lastDebounceTime3 = 0; // ultimo click del bottone 3
-unsigned long lastDebounceTime4 = 0; // ultimo click del bottone 4
-bool lastButtonState1 = HIGH;        // Stato precedente del bottone 1
-bool lastButtonState2 = HIGH;        // Stato precedente del bottone 2
-bool lastButtonState3 = HIGH;        // Stato precedente del bottone 3
-bool lastButtonState4 = HIGH;        // Stato precedente del bottgitone 4
+unsigned long lastDebounceTime[4] = {0, 0, 0, 0};
+bool lastButtonState[4] = {HIGH, HIGH, HIGH, HIGH};
 
 int fadeAmount;
 int currIntensity;
@@ -57,11 +51,8 @@ void resetLeds()
   {
     digitalWrite(ledPins[i], LOW);
     ledState[i] = LOW;
+    lastButtonState[i] = HIGH;
   }
-  lastButtonState1 = HIGH;
-  lastButtonState2 = HIGH;
-  lastButtonState3 = HIGH;
-  lastButtonState4 = HIGH;
 }
 
 void readDifficultyLevel()
@@ -174,14 +165,14 @@ void initGame()
   bool currentButtonState1 = digitalRead(BUT1_PIN);
 
   // Controllo se è trascorso il timeout e nessun pulsante è stato premuto
-  if (currentTime - startMillis >= timeout && currentButtonState1 == lastButtonState1)
+  if (currentTime - startMillis >= timeout && currentButtonState1 == lastButtonState[0])
   {
     lcd.clear();
     sleepNow(); // Manda Arduino in modalità sleep
   }
 
   // Se il bottone 1 viene premuto, inizializza il gioco
-  if (currentButtonState1 != lastButtonState1 && currentButtonState1 == HIGH && (currentTime - lastDebounceTime1 > debounceDelay))
+  if (currentButtonState1 != lastButtonState[0] && currentButtonState1 == HIGH && (currentTime - lastDebounceTime[0] > debounceDelay))
   {
     lcd.clear();
     readDifficultyLevel();
@@ -191,10 +182,10 @@ void initGame()
     delay(500);        // Attesa per visualizzare "Go!"
     gameActive = true; // Attiva il gioco
     resetLeds();       // Resetta i LED
-    lastDebounceTime1 = currentTime;
+    lastDebounceTime[0] = currentTime;
   }
 
-  lastButtonState1 = currentButtonState1;
+  lastButtonState[0] = currentButtonState1;
 
   delay(20);
 }
@@ -294,54 +285,36 @@ void gameLoop()
   }
 }
 
-void ledHandler()
-{
-  unsigned long currentTime = millis();
+void ledHandler() {
+  unsigned long currentTime = millis(); 
 
-  // Bottone 1
-  bool currentButtonState1 = digitalRead(BUT1_PIN);
-  if (currentButtonState1 != lastButtonState1 && currentButtonState1 == HIGH && (currentTime - lastDebounceTime1 > debounceDelay))
-  {
-    ledState[0] = reverseValue(ledState[0]);
-    Serial.write("bt1 click");
-    lastDebounceTime1 = currentTime;
+  // Loop per gestire i 4 bottoni e i rispettivi LED
+  for (int i = 0; i < 4; i++) {
+    bool currentButtonState = digitalRead(buttonPins[i]);
+
+    // Controlla se lo stato del pulsante è cambiato e se è passato il debounceDelay
+    if (currentButtonState != lastButtonState[i] && currentButtonState == HIGH && 
+        (currentTime - lastDebounceTime[i] > debounceDelay)) {
+      ledState[i] = reverseValue(ledState[i]); // Inverti stato LED
+      Serial.print("bt"); Serial.print(i + 1); Serial.println(" click");
+
+      lastDebounceTime[i] = currentTime; // Aggiorna l'ultimo tempo di debounce
+    }
+    lastButtonState[i] = currentButtonState; // Aggiorna lo stato del pulsante
   }
-  lastButtonState1 = currentButtonState1;
 
-  // Bottone 2
-  bool currentButtonState2 = digitalRead(BUT2_PIN);
-  if (currentButtonState2 != lastButtonState2 && currentButtonState2 == HIGH && (currentTime - lastDebounceTime2 > debounceDelay))
-  {
-    ledState[1] = reverseValue(ledState[1]);
-    Serial.write("bt2 click");
-    lastDebounceTime2 = currentTime;
+  delay(20); // Piccola attesa per evitare letture troppo veloci
+
+  // Stampa lo stato dei LED per debugging
+  Serial.print("button state: ");
+  for (int i = 0; i < 4; i++) {
+    Serial.print(ledState[i]); Serial.print(" ");
   }
-  lastButtonState2 = currentButtonState2;
+  Serial.println();
 
-  // Bottone 3
-  bool currentButtonState3 = digitalRead(BUT3_PIN);
-  if (currentButtonState3 != lastButtonState3 && currentButtonState3 == HIGH && (currentTime - lastDebounceTime3 > debounceDelay))
-  {
-    ledState[2] = reverseValue(ledState[2]);
-    Serial.write("bt3 click");
-    lastDebounceTime3 = currentTime;
-  }
-  lastButtonState3 = currentButtonState3;
-
-  // Bottone 4
-  bool currentButtonState4 = digitalRead(BUT4_PIN);
-  if (currentButtonState4 != lastButtonState4 && currentButtonState4 == HIGH && (currentTime - lastDebounceTime4 > debounceDelay))
-  {
-    ledState[3] = reverseValue(ledState[3]);
-    Serial.write("bt4 click");
-    lastDebounceTime4 = currentTime;
-  }
-  lastButtonState4 = currentButtonState4;
-
-  delay(20);
-  Serial.println("button state: " + (String)ledState[0] + " " + (String)ledState[1] + " " + (String)ledState[2] + " " + (String)ledState[3]);
-  ledUpdater();
+  ledUpdater(); // Aggiorna lo stato dei LED
 }
+
 
 void ledUpdater()
 {
