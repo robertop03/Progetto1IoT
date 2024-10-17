@@ -7,7 +7,7 @@
 #define LED3_PIN A3
 #define LED4_PIN A4
 #define LEDS_PIN 9
-#define BUT1_PIN 8
+#define BUT1_PIN 2
 #define BUT2_PIN 10
 #define BUT3_PIN 11
 #define BUT4_PIN 12
@@ -21,7 +21,7 @@ unsigned long lastDebounceTime4 = 0; // ultimo click del bottone 4
 bool lastButtonState1 = HIGH;        // Stato precedente del bottone 1
 bool lastButtonState2 = HIGH;        // Stato precedente del bottone 2
 bool lastButtonState3 = HIGH;        // Stato precedente del bottone 3
-bool lastButtonState4 = HIGH;        // Stato precedente del bottone 4
+bool lastButtonState4 = HIGH;        // Stato precedente del bottgitone 4
 
 int fadeAmount;
 int currIntensity;
@@ -43,7 +43,7 @@ const int ledPins[] = {LED1_PIN, LED2_PIN, LED3_PIN, LED4_PIN};    // L1, L2, L3
 const int buttonPins[] = {BUT1_PIN, BUT2_PIN, BUT3_PIN, BUT4_PIN}; // B1, B2, B3, B4 (buttons for binary LEDs)
 
 // Create an LCD object. Parameters: (RS, E, D4, D5, D6, D7):
-LiquidCrystal lcd = LiquidCrystal(2, 3, 4, 5, 6, 7);
+LiquidCrystal lcd = LiquidCrystal(8, 3, 4, 5, 6, 7);
 
 int generateRandomicNumber()
 {
@@ -82,10 +82,6 @@ void wakeUpNow() {}
 
 void sleepNow()
 {
-  bool currentButtonState1 = digitalRead(BUT1_PIN);
-  bool currentButtonState2 = digitalRead(BUT2_PIN);
-  bool currentButtonState3 = digitalRead(BUT3_PIN);
-  bool currentButtonState4 = digitalRead(BUT4_PIN);
 
   Serial.println("Sleeping now");
   Serial.flush();
@@ -95,13 +91,15 @@ void sleepNow()
   sleep_enable();                      // Abilita la modalità di sleep
   sleep_mode();                        // Arduino va in modalità sleep
 
-  // Quando Arduino si risveglia:
-  if (currentButtonState1 == LOW || currentButtonState2 == LOW || currentButtonState3 == LOW || currentButtonState4 == LOW)
-  {
-    sleep_disable(); // Disabilita la modalità di sleep
-    Serial.println("WAKE UP");
-    return;
-  }
+
+  sleep_disable(); // Disabilita la modalità di sleep
+  Serial.println("WAKE UP");
+  startMillis = millis();
+  lcd.setCursor(0, 0);
+  lcd.write("Welcome to GMB!");
+  lcd.setCursor(0, 1);
+  lcd.write("Press B1 to Strt");
+
 }
 
 void setup()
@@ -114,7 +112,7 @@ void setup()
   for (int i = 0; i < 4; i++)
   {
     pinMode(ledPins[i], OUTPUT);
-    pinMode(buttonPins[i], INPUT_PULLUP);
+    pinMode(buttonPins[i], INPUT);
   }
   pinMode(LEDS_PIN, OUTPUT);
   pinMode(POT_PIN, INPUT);
@@ -124,10 +122,7 @@ void setup()
   currIntensity = 0;
 
   // Imposta interrupt per svegliare Arduino quando un qualsiasi pulsante viene premuto
-  attachInterrupt(digitalPinToInterrupt(8), wakeUpNow, RISING);
-  attachInterrupt(digitalPinToInterrupt(10), wakeUpNow, RISING);
-  attachInterrupt(digitalPinToInterrupt(11), wakeUpNow, RISING);
-  attachInterrupt(digitalPinToInterrupt(12), wakeUpNow, RISING);
+  attachInterrupt(digitalPinToInterrupt(2), wakeUpNow, RISING);
 
   lcd.setCursor(0, 0);
   lcd.write("Welcome to GMB!");
@@ -234,6 +229,7 @@ void gameLoop()
   lcd.setCursor(0, 0);
   lcd.print("Number: ");
   lcd.print(numero);
+  resetLeds();
   delay(500);
 
   long startTime = millis();
@@ -272,10 +268,11 @@ void gameLoop()
   }
   else
   {
+    resetLeds();
     digitalWrite(LEDS_PIN, HIGH); // Accende il LED rosso
     delay(1000);                  // Tieni acceso per 1 secondo
     digitalWrite(LEDS_PIN, LOW);  // Spegni il LED rosso
-
+    
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Game Over -");
@@ -284,6 +281,7 @@ void gameLoop()
     lcd.print(score); // Mostra il punteggio finale
     delay(10000);
     // Reset game variables
+    startMillis = millis();
     score = 0;           // Resetta il punteggio
     gameActive = false;  // Resetta il gioco
     gameInitialized = 0; // Riporta il gioco allo stato iniziale
