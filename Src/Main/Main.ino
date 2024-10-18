@@ -224,7 +224,6 @@ void gameLoop()
   delay(500);
 
   long startTime = millis();
-  bool correct = false;
 
   // Ciclo di attesa fino al termine del tempo
   timelimit = (int)(10000 / factorF);
@@ -233,21 +232,7 @@ void gameLoop()
     ledHandler(); // Gestisce gli input dei pulsanti e gli LED
   }
 
-  // Controllo se il numero binario è corretto dopo che il tempo è scaduto
-  if (checkBinary()) // Controlla se l'input in binario è corretto
-  {
-    correct = true;
-  }
-  if (correct)
-  {
-    Serial.println("Boolean: True"); // Se true, stampa "True"
-  }
-  else
-  {
-    Serial.println("Boolean: False"); // Se false, stampa "False"
-  }
-
-  if (correct)
+  if (checkBinary())
   {
     score++; // Aumenta il punteggio se la risposta è corretta
     lcd.clear();
